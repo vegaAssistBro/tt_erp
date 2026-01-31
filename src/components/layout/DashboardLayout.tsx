@@ -30,28 +30,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const navigation = [
-  { name: '仪表盘', href: '/', icon: LayoutDashboard },
-  { name: '销售管理', href: '/sales', icon: ShoppingCart, children: [
-    { name: '订单管理', href: '/sales/orders' },
-    { name: '客户管理', href: '/sales/customers' },
-  ]},
-  { name: '采购管理', href: '/purchases', icon: Package, children: [
-    { name: '采购订单', href: '/purchases/orders' },
-    { name: '供应商管理', href: '/purchases/suppliers' },
-  ]},
-  { name: '库存管理', href: '/inventory', icon: Building, children: [
-    { name: '产品管理', href: '/inventory/products' },
-    { name: '仓库管理', href: '/inventory/warehouses' },
-    { name: '库存变动', href: '/inventory/movements' },
-  ]},
-  { name: '财务管理', href: '/finance', icon: CreditCard, children: [
-    { name: '账户管理', href: '/finance/accounts' },
-    { name: '交易记录', href: '/finance/transactions' },
-  ]},
-  { name: '系统管理', href: '/settings', icon: Settings, children: [
-    { name: '用户管理', href: '/settings/users' },
-    { name: '角色权限', href: '/settings/roles' },
-  ]},
+  { name: '仪表盘', href: '/dashboard', icon: LayoutDashboard },
+  { name: '订单管理', href: '/orders', icon: ShoppingCart },
+  { name: '客户管理', href: '/customers', icon: Users },
+  { name: '采购管理', href: '/purchases', icon: Package },
+  { name: '供应商管理', href: '/suppliers', icon: Building },
+  { name: '库存管理', href: '/inventory', icon: Building },
+  { name: '财务管理', href: '/finance', icon: CreditCard },
+  { name: '用户管理', href: '/users', icon: Users },
+  { name: '活动日志', href: '/activities', icon: FileText },
 ]
 
 export default function DashboardLayout({
