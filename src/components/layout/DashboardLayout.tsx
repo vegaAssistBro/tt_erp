@@ -18,6 +18,7 @@ import {
   X,
   Upload,
   BarChart3,
+  Bell,
   ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -41,6 +42,7 @@ const navigation = [
   { name: '财务管理', href: '/finance', icon: CreditCard },
   { name: '报表中心', href: '/reports', icon: BarChart3 },
   { name: '数据导入', href: '/import-export', icon: Upload },
+  { name: '消息通知', href: '/notifications', icon: Bell },
   { name: '用户管理', href: '/users', icon: Users },
   { name: '活动日志', href: '/activities', icon: FileText },
 ]

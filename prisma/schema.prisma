@@ -31,6 +31,8 @@ model User {
   purchases     Purchase[]
   activities    Activity[]
   sessions      Session[]
+  notifications Notification[]
+  managedWarehouses Warehouse[]
 
   @@map("users")
 }
@@ -88,7 +90,7 @@ model Product {
   sellPrice     Decimal     @db.Decimal(10, 2)  // 销售价
   minPrice      Decimal?    @db.Decimal(10, 2)  // 最低售价
   weight        Decimal?    @db.Decimal(10, 3)  // 重量(kg)
-  images        String[]    // 产品图片URLs
+  images        String?     @db.Text   // 产品图片URLs (JSON格式)
   isActive      Boolean     @default(true)
   isFeatured    Boolean     @default(false)
   createdAt     DateTime    @default(now())
@@ -459,4 +461,31 @@ enum ReportType {
   PROFIT_LOSS            // 损益表
   CUSTOMER_STAT          // 客户统计
   SUPPLIER_STAT          // 供应商统计
+}
+
+// ==================== 消息通知 ====================
+
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  title       String
+  content     String            @db.Text
+  link        String?
+  isRead      Boolean           @default(false)
+  readAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  SYSTEM           // 系统通知
+  ORDER            // 订单相关
+  PURCHASE         // 采购相关
+  INVENTORY        // 库存相关
+  FINANCE          // 财务相关
+  MENTION          // @提及
 }
