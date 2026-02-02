@@ -3,7 +3,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  output: 'standalone',
+  // Temporarily disable standalone mode for simpler deployment
 }
 
 module.exports = nextConfig

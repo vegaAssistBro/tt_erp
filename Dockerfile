@@ -30,12 +30,11 @@ RUN adduser --system --uid 1001 nextjs
 # Copy necessary files from builder
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/package.json ./
 
-# Copy prisma files for database
+# Copy prisma files
 COPY --from=builder /app/prisma ./prisma
 
 USER nextjs
@@ -45,4 +44,4 @@ EXPOSE 5000
 ENV PORT 5000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["npm", "run", "start"]
