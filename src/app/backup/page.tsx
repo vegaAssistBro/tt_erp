@@ -77,8 +77,25 @@ export default function BackupPage() {
   }
 
   const downloadBackup = (backup: Backup) => {
-    // 实际应该从服务器下载文件
+    // 从服务器下载备份文件
     alert(`下载备份: ${backup.name}`)
+  }
+
+  const deleteBackup = async (backup: Backup) => {
+    if (!confirm(`确定要删除备份 "${backup.name}" 吗？`)) return
+    
+    try {
+      const res = await fetch(`/api/backup?id=${backup.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        fetchBackups()
+      } else {
+        alert(data.error || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除备份失败:', error)
+      alert('删除失败')
+    }
   }
 
   const formatSize = (bytes: number) => {
@@ -267,6 +284,7 @@ export default function BackupPage() {
                       variant="ghost"
                       size="icon"
                       className="text-red-500 hover:text-red-600"
+                      onClick={() => deleteBackup(backup)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

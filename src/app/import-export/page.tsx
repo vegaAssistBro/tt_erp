@@ -105,17 +105,29 @@ export default function ImportExportPage() {
     }
   }
 
-  const downloadTemplate = () => {
-    const template = `SKU,产品名称,分类,单位,成本价,销售价,条码,状态
+  const downloadTemplate = async () => {
+    try {
+      const res = await fetch('/api/import/products')
+      const text = await res.text()
+      const blob = new Blob([text], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'product_template.csv'
+      a.click()
+    } catch (error) {
+      console.error('下载模板失败:', error)
+      // Fallback to hardcoded template
+      const template = `SKU,产品名称,分类,单位,成本价,销售价,条码,状态
 P001,测试产品 A,电子,个,10.00,20.00,123456789,启用
 P002,测试产品 B,电子,个,20.00,40.00,987654321,启用`
-
-    const blob = new Blob([template], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'product_template.csv'
-    a.click()
+      const blob = new Blob([template], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'product_template.csv'
+      a.click()
+    }
   }
 
   if (!session) {

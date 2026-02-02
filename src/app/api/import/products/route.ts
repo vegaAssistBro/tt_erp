@@ -3,6 +3,31 @@ import prisma from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+// GET /api/import/products - 获取导入模板
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    // 返回 CSV 模板
+    const template = `SKU,产品名称,分类,单位,成本价,销售价,条码,状态
+P001,测试产品 A,电子,个,10.00,20.00,123456789,启用
+P002,测试产品 B,电子,个,20.00,40.00,987654321,启用`
+
+    return new NextResponse(template, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="product_template.csv"',
+      },
+    })
+  } catch (error: any) {
+    console.error('获取模板失败:', error)
+    return NextResponse.json({ error: '获取模板失败' }, { status: 500 })
+  }
+}
+
 // POST /api/import/products - 批量导入产品
 export async function POST(request: NextRequest) {
   try {
