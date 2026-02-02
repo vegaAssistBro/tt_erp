@@ -9,22 +9,21 @@ interface DialogProps {
   children: React.ReactNode
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open = false, onOpenChange, children }: DialogProps) {
+  if (!open) return null
+
   return (
-    <>
-      {children}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
-            className="fixed inset-0 bg-black/50" 
-            onClick={() => onOpenChange?.(false)}
-          />
-          <div className="relative z-50 w-full max-w-lg bg-white rounded-lg shadow-lg">
-            {children}
-          </div>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 bg-black/50 transition-opacity" 
+          onClick={() => onOpenChange?.(false)}
+        />
+        <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:w-full sm:max-w-lg">
+          {children}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   )
 }
 
