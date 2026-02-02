@@ -9,9 +9,14 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+# Build arguments
+ARG NODE_ENV=development
+
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
+ARG NODE_ENV
+ENV NODE_ENV=$NODE_ENV
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -22,7 +27,7 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
