@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 }
 
 // 记录活动的辅助函数
-export async function logActivity(
+async function logActivity(
   userId: string,
   action: string,
   entityType: string,
