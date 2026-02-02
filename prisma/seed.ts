@@ -362,7 +362,7 @@ async function main() {
   // 11. 创建交易记录 (35个)
   for (let i = 0; i < 35; i++) {
     const account = createdAccounts[i % createdAccounts.length]
-    const isDebit = account.type === AccountType.ASSET || account.type === AccountType.EXPENSE
+    const isDebit = account.type === 'ASSET' || account.type === 'EXPENSE'
     
     await prisma.transaction.create({
       data: {
