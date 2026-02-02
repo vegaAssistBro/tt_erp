@@ -71,30 +71,39 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  deploy-staging:
+  deploy-local:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    environment:
-      name: staging
-      url: https://staging.example.com
     steps:
-      - name: Deploy to staging server
-        run: |
-          echo "Deploying to staging server..."
-          # Add your deployment commands here
-          # Example: ssh deploy@staging.example.com 'cd /path/to/app && docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} && docker-compose up -d'
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  deploy-production:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    environment:
-      name: production
-      url: https://example.com
-    steps:
-      - name: Deploy to production server
-        run: |
-          echo "Deploying to production server..."
-          # Add your deployment commands here
-          # Example: ssh deploy@production.example.com 'cd /path/to/app && docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} && docker-compose up -d'
+      - name: Deploy to local server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            cd /home/ubuntu/.openclaw/workspace/tt_erp
+            
+            # Pull latest image
+            docker pull ghcr.io/vegaassistbro/tt_erp:latest
+            
+            # Stop and remove existing container
+            docker stop tt_erp_prod || true
+            docker rm tt_erp_prod || true
+            
+            # Run new container on port 5000
+            docker run -d \
+              --name tt_erp_prod \
+              -p 5000:3000 \
+              -e NODE_ENV=production \
+              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+              -e NEXTAUTH_URL=http://localhost:5000 \
+              -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+              ghcr.io/vegaassistbro/tt_erp:latest
+            
+            echo "Deployed successfully on port 5000"
