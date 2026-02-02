@@ -4,7 +4,7 @@
   "description": "企业资源规划系统 - Enterprise Resource Planning System",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

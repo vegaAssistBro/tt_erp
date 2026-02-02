@@ -71,14 +71,15 @@ export async function POST(request: NextRequest) {
     const {
       customerId,
       items,
+      status,
       deliveryDate,
       deliveryAddress,
       note,
     } = body
 
     // 验证必填字段
-    if (!customerId || !items || items.length === 0) {
-      return NextResponse.json({ error: '缺少必填字段' }, { status: 400 })
+    if (!customerId) {
+      return NextResponse.json({ error: '请选择客户' }, { status: 400 })
     }
 
     // 生成订单号
@@ -93,46 +94,74 @@ export async function POST(request: NextRequest) {
 
     // 计算订单金额
     let totalAmount = 0
-    const orderItems = items.map((item: any) => {
-      const amount = item.quantity * item.unitPrice
-      totalAmount += amount
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount || 0,
-        taxRate: item.taxRate || 0,
-        amount,
-      }
-    })
+    let taxAmount = 0
+    let finalAmount = 0
 
-    const taxAmount = totalAmount * 0.13 // 暂定税率13%
-    const finalAmount = totalAmount + taxAmount
+    // 如果有订单明细，计算金额
+    let order
+    if (items && items.length > 0) {
+      const orderItems = items.map((item: any) => {
+        const amount = item.quantity * item.unitPrice
+        totalAmount += amount
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount || 0,
+          taxRate: item.taxRate || 0,
+          amount,
+        }
+      })
+      taxAmount = totalAmount * 0.13 // 暂定税率13%
+      finalAmount = totalAmount + taxAmount
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        customerId,
-        deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
-        deliveryAddress,
-        note,
-        salesPersonId: session.user?.id,
-        totalAmount,
-        taxAmount,
-        finalAmount,
-        items: {
-          create: orderItems,
-        },
-      },
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          status: status || 'DRAFT',
+          deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+          deliveryAddress,
+          note,
+          salesPersonId: session.user?.id,
+          totalAmount,
+          taxAmount,
+          finalAmount,
+          items: {
+            create: orderItems,
           },
         },
-      },
-    })
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      })
+    } else {
+      // 没有明细时创建空订单
+      order = await prisma.order.create({
+        data: {
+          orderNumber,
+          customerId,
+          status: status || 'DRAFT',
+          deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+          deliveryAddress,
+          note,
+          salesPersonId: session.user?.id,
+          totalAmount,
+          taxAmount,
+          finalAmount,
+        },
+        include: {
+          customer: true,
+        },
+      })
+    }
+
+    return NextResponse.json(order, { status: 201 })
 
     return NextResponse.json(order, { status: 201 })
   } catch (error) {

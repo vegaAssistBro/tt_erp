@@ -208,9 +208,9 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast 提示 */}
+      {/* Toast 提示 - 使用更高的 z-index 确保显示在弹窗之上 */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-2 rounded-md text-white ${
           toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
         }`}>
           {toast.message}
