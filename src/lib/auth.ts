@@ -18,35 +18,40 @@ export const authOptions: NextAuthOptions = {
           throw new Error("请输入邮箱和密码")
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email }
+          })
 
-        if (!user || !user.password) {
-          throw new Error("用户不存在")
-        }
+          if (!user || !user.password) {
+            throw new Error("用户不存在")
+          }
 
-        if (!user.isActive) {
-          throw new Error("账户已被禁用")
-        }
+          if (!user.isActive) {
+            throw new Error("账户已被禁用")
+          }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
+          const isValid = await bcrypt.compare(credentials.password, user.password)
 
-        if (!isValid) {
-          throw new Error("密码错误")
-        }
+          if (!isValid) {
+            throw new Error("密码错误")
+          }
 
-        // 更新最后登录时间
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() }
-        })
+          // 更新最后登录时间
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() }
+          })
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          throw new Error(error instanceof Error ? error.message : "认证失败")
         }
       }
     })

@@ -15,10 +15,13 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
     "@hookform/resolvers": "^3.3.0",
     "@prisma/client": "^5.10.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@tanstack/react-query": "^5.24.0",
     "bcryptjs": "^2.4.3",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.0",
     "lucide-react": "^0.344.0",

@@ -123,3 +123,78 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建产品失败' }, { status: 500 })
   }
 }
+
+// PUT /api/products - 更新产品
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, ...data } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少产品ID' }, { status: 400 })
+    }
+
+    // 如果更新 SKU，检查是否被其他产品使用
+    if (data.sku) {
+      const existing = await prisma.product.findFirst({
+        where: { sku: data.sku, NOT: { id } },
+      })
+      if (existing) {
+        return NextResponse.json({ error: '产品编号已存在' }, { status: 400 })
+      }
+    }
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        ...data,
+        costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
+        sellPrice: data.sellPrice ? parseFloat(data.sellPrice) : undefined,
+        minPrice: data.minPrice ? parseFloat(data.minPrice) : undefined,
+        weight: data.weight ? parseFloat(data.weight) : undefined,
+      },
+      include: { category: true },
+    })
+
+    return NextResponse.json(product)
+  } catch (error) {
+    console.error('更新产品失败:', error)
+    return NextResponse.json({ error: '更新产品失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/products - 删除产品
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少产品ID' }, { status: 400 })
+    }
+
+    // 检查产品是否有库存
+    const inventory = await prisma.inventory.findUnique({
+      where: { productId: id },
+    })
+    if (inventory && inventory.quantity > 0) {
+      return NextResponse.json({ error: '产品有库存，不能删除' }, { status: 400 })
+    }
+
+    await prisma.product.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除产品失败:', error)
+    return NextResponse.json({ error: '删除产品失败' }, { status: 500 })
+  }
+}

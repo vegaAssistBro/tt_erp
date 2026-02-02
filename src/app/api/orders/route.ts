@@ -140,3 +140,103 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建销售订单失败' }, { status: 500 })
   }
 }
+
+// PUT /api/orders - 更新销售订单
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const {
+      id,
+      status,
+      deliveryDate,
+      deliveryAddress,
+      note,
+    } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少订单ID' }, { status: 400 })
+    }
+
+    // 检查订单是否存在
+    const existingOrder = await prisma.order.findUnique({
+      where: { id },
+    })
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: '订单不存在' }, { status: 404 })
+    }
+
+    // 只有草稿和已确认状态的订单可以修改
+    if (!['DRAFT', 'CONFIRMED'].includes(existingOrder.status)) {
+      return NextResponse.json({ error: '当前状态不可修改' }, { status: 400 })
+    }
+
+    const order = await prisma.order.update({
+      where: { id },
+      data: {
+        status,
+        deliveryDate: deliveryDate ? new Date(deliveryDate) : null,
+        deliveryAddress,
+        note,
+      },
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json(order)
+  } catch (error) {
+    console.error('更新销售订单失败:', error)
+    return NextResponse.json({ error: '更新销售订单失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/orders - 删除销售订单
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少订单ID' }, { status: 400 })
+    }
+
+    // 检查订单是否存在
+    const existingOrder = await prisma.order.findUnique({
+      where: { id },
+    })
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: '订单不存在' }, { status: 404 })
+    }
+
+    // 只有草稿状态的订单可以删除
+    if (existingOrder.status !== 'DRAFT') {
+      return NextResponse.json({ error: '只有草稿状态的订单可以删除' }, { status: 400 })
+    }
+
+    await prisma.order.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除销售订单失败:', error)
+    return NextResponse.json({ error: '删除销售订单失败' }, { status: 500 })
+  }
+}

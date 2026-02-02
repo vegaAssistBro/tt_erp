@@ -135,3 +135,86 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建采购订单失败' }, { status: 500 })
   }
 }
+
+// PUT /api/purchases - 更新采购订单
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, status, expectedDate, warehouseId, note } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少采购单ID' }, { status: 400 })
+    }
+
+    const existingPurchase = await prisma.purchase.findUnique({
+      where: { id },
+    })
+
+    if (!existingPurchase) {
+      return NextResponse.json({ error: '采购单不存在' }, { status: 404 })
+    }
+
+    if (!['DRAFT', 'SUBMITTED', 'CONFIRMED'].includes(existingPurchase.status)) {
+      return NextResponse.json({ error: '当前状态不可修改' }, { status: 400 })
+    }
+
+    const purchase = await prisma.purchase.update({
+      where: { id },
+      data: {
+        status,
+        expectedDate: expectedDate ? new Date(expectedDate) : null,
+        warehouseId,
+        note,
+      },
+      include: {
+        supplier: true,
+        items: { include: { product: true } },
+      },
+    })
+
+    return NextResponse.json(purchase)
+  } catch (error) {
+    console.error('更新采购订单失败:', error)
+    return NextResponse.json({ error: '更新采购订单失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/purchases - 删除采购订单
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少采购单ID' }, { status: 400 })
+    }
+
+    const existingPurchase = await prisma.purchase.findUnique({
+      where: { id },
+    })
+
+    if (!existingPurchase) {
+      return NextResponse.json({ error: '采购单不存在' }, { status: 404 })
+    }
+
+    if (existingPurchase.status !== 'DRAFT') {
+      return NextResponse.json({ error: '只有草稿状态的采购单可以删除' }, { status: 400 })
+    }
+
+    await prisma.purchase.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除采购订单失败:', error)
+    return NextResponse.json({ error: '删除采购订单失败' }, { status: 500 })
+  }
+}

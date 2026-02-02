@@ -109,3 +109,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建供应商失败' }, { status: 500 })
   }
 }
+
+// PUT /api/suppliers - 更新供应商
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, ...data } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少供应商ID' }, { status: 400 })
+    }
+
+    const supplier = await prisma.supplier.update({
+      where: { id },
+      data: {
+        ...data,
+        leadTime: data.leadTime ? parseInt(data.leadTime) : undefined,
+        minOrderQty: data.minOrderQty ? parseInt(data.minOrderQty) : undefined,
+      },
+    })
+
+    return NextResponse.json(supplier)
+  } catch (error) {
+    console.error('更新供应商失败:', error)
+    return NextResponse.json({ error: '更新供应商失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/suppliers - 删除供应商
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少供应商ID' }, { status: 400 })
+    }
+
+    await prisma.supplier.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除供应商失败:', error)
+    return NextResponse.json({ error: '删除供应商失败' }, { status: 500 })
+  }
+}

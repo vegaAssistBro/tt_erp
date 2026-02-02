@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { OrderForm } from '@/components/order-form'
 
 interface Order {
   id: string
@@ -38,6 +39,14 @@ interface Order {
     name: string
   } | null
   createdAt: string
+}
+
+interface OrderFormData {
+  customerId: string
+  status: string
+  deliveryDate: string
+  deliveryAddress: string
+  note: string
 }
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -59,6 +68,14 @@ export default function OrdersPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
+  // 弹窗状态
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingOrder, setDeletingOrder] = useState<Order | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
   const fetchOrders = async () => {
     try {
       const params = new URLSearchParams({
@@ -69,7 +86,7 @@ export default function OrdersPage() {
 
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
-      
+
       if (data.data) {
         setOrders(data.data)
         setTotalPages(data.totalPages)
@@ -77,6 +94,7 @@ export default function OrdersPage() {
       }
     } catch (error) {
       console.error('获取销售订单失败:', error)
+      showToast('error', '获取订单列表失败')
     } finally {
       setLoading(false)
     }
@@ -96,6 +114,90 @@ export default function OrdersPage() {
     return new Date(dateStr).toLocaleDateString('zh-CN')
   }
 
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  // 添加订单
+  const handleAddOrder = async (data: OrderFormData) => {
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '创建失败')
+      }
+
+      showToast('success', '创建订单成功')
+      fetchOrders()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '创建订单失败')
+      throw error
+    }
+  }
+
+  // 编辑订单
+  const handleEditOrder = async (data: OrderFormData) => {
+    if (!editingOrder) return
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingOrder.id, ...data }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '更新失败')
+      }
+
+      showToast('success', '更新订单成功')
+      fetchOrders()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '更新订单失败')
+      throw error
+    }
+  }
+
+  // 删除订单
+  const handleDeleteOrder = async () => {
+    if (!deletingOrder) return
+
+    try {
+      const res = await fetch(`/api/orders?id=${deletingOrder.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '删除失败')
+      }
+
+      showToast('success', '删除订单成功')
+      setDeleteConfirmOpen(false)
+      setDeletingOrder(null)
+      fetchOrders()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '删除订单失败')
+    }
+  }
+
+  const openEditDialog = (order: Order) => {
+    setEditingOrder(order)
+    setEditDialogOpen(true)
+  }
+
+  const openDeleteConfirm = (order: Order) => {
+    setDeletingOrder(order)
+    setDeleteConfirmOpen(true)
+  }
+
   if (!session) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -106,12 +208,21 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast 提示 */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">销售订单</h1>
           <p className="text-gray-500">管理客户订单和发货</p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           新建订单
         </Button>
@@ -187,13 +298,19 @@ export default function OrdersPage() {
                         <TableCell>{order.salesPerson?.name || '-'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(order)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openDeleteConfirm(order)}
+                              disabled={order.status !== 'DRAFT'}
+                            >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
@@ -234,6 +351,47 @@ export default function OrdersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 添加订单弹窗 */}
+      <OrderForm
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSubmit={handleAddOrder}
+        mode="add"
+      />
+
+      {/* 编辑订单弹窗 */}
+      <OrderForm
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={handleEditOrder}
+        initialData={editingOrder}
+        mode="edit"
+      />
+
+      {/* 删除确认对话框 */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setDeleteConfirmOpen(false)}
+          />
+          <div className="relative z-50 w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
+            <p className="text-gray-500 mb-6">
+              确定要删除订单 <strong>{deletingOrder?.orderNumber}</strong> 吗？此操作不可恢复。
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                取消
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteOrder}>
+                删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -104,6 +104,15 @@ export default function NotificationsPage() {
     }
   }
 
+  const deleteNotification = async (id: string) => {
+    try {
+      await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' })
+      fetchNotifications()
+    } catch (error) {
+      console.error('删除通知失败:', error)
+    }
+  }
+
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr)
     const now = new Date()
@@ -215,14 +224,24 @@ export default function NotificationsPage() {
                     </div>
 
                     {!notification.isRead && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => markAsRead([notification.id])}
-                        className="text-gray-400 hover:text-green-600"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => markAsRead([notification.id])}
+                          className="text-gray-400 hover:text-green-600"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteNotification(notification.id)}
+                          className="text-gray-400 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )

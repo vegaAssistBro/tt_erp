@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession, signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
   DollarSign, 
@@ -22,7 +23,8 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardStats>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -34,8 +36,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchStats()
-  }, [])
+    if (status === 'unauthenticated') {
+      router.push('/login')
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    if (session) {
+      fetchStats()
+    }
+  }, [session])
 
   const fetchStats = async () => {
     try {

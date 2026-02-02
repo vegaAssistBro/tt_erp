@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { UserForm } from '@/components/user-form'
 
 interface User {
   id: string
@@ -31,6 +32,16 @@ interface User {
   isActive: boolean
   lastLoginAt: string | null
   createdAt: string
+}
+
+interface UserFormData {
+  email: string
+  name: string
+  password?: string
+  role: string
+  phone?: string
+  department?: string
+  isActive: boolean
 }
 
 const roleMap: Record<string, { label: string; color: string }> = {
@@ -52,6 +63,14 @@ export default function UsersPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
 
+  // 弹窗状态
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
   const fetchUsers = async () => {
     try {
       const params = new URLSearchParams({
@@ -62,7 +81,7 @@ export default function UsersPage() {
 
       const res = await fetch(`/api/users?${params}`)
       const data = await res.json()
-      
+
       if (data.data) {
         setUsers(data.data)
         setTotalPages(data.totalPages)
@@ -70,6 +89,7 @@ export default function UsersPage() {
       }
     } catch (error) {
       console.error('获取用户失败:', error)
+      showToast('error', '获取用户列表失败')
     } finally {
       setLoading(false)
     }
@@ -90,6 +110,90 @@ export default function UsersPage() {
     return new Date(dateStr).toLocaleDateString('zh-CN')
   }
 
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  // 添加用户
+  const handleAddUser = async (data: UserFormData) => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '创建失败')
+      }
+
+      showToast('success', '添加用户成功')
+      fetchUsers()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '创建用户失败')
+      throw error
+    }
+  }
+
+  // 编辑用户
+  const handleEditUser = async (data: UserFormData) => {
+    if (!editingUser) return
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingUser.id, ...data }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '更新失败')
+      }
+
+      showToast('success', '更新用户成功')
+      fetchUsers()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '更新用户失败')
+      throw error
+    }
+  }
+
+  // 删除用户
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return
+
+    try {
+      const res = await fetch(`/api/users?id=${deletingUser.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || '删除失败')
+      }
+
+      showToast('success', '删除用户成功')
+      setDeleteConfirmOpen(false)
+      setDeletingUser(null)
+      fetchUsers()
+    } catch (error) {
+      showToast('error', error instanceof Error ? error.message : '删除用户失败')
+    }
+  }
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user)
+    setEditDialogOpen(true)
+  }
+
+  const openDeleteConfirm = (user: User) => {
+    setDeletingUser(user)
+    setDeleteConfirmOpen(true)
+  }
+
   if (!session) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -100,12 +204,21 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast 提示 */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-md text-white ${
+          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">用户管理</h1>
           <p className="text-gray-500">管理系统用户和权限</p>
         </div>
-        <Button>
+        <Button onClick={() => setAddDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           添加用户
         </Button>
@@ -185,8 +298,8 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.isActive 
-                              ? 'bg-green-100 text-green-800' 
+                            user.isActive
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
                             {user.isActive ? '启用' : '禁用'}
@@ -194,10 +307,19 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(user)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openDeleteConfirm(user)}
+                              disabled={user.id === session.user?.id}
+                            >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
@@ -238,6 +360,47 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 添加用户弹窗 */}
+      <UserForm
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onSubmit={handleAddUser}
+        mode="add"
+      />
+
+      {/* 编辑用户弹窗 */}
+      <UserForm
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={handleEditUser}
+        initialData={editingUser}
+        mode="edit"
+      />
+
+      {/* 删除确认对话框 */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setDeleteConfirmOpen(false)}
+          />
+          <div className="relative z-50 w-full max-w-md bg-white rounded-lg shadow-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
+            <p className="text-gray-500 mb-6">
+              确定要删除用户 <strong>{deletingUser?.name}</strong> 吗？此操作不可恢复。
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+                取消
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteUser}>
+                删除
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

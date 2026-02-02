@@ -129,3 +129,64 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '调整库存失败' }, { status: 500 })
   }
 }
+
+// PUT /api/inventory - 更新库存信息
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, reorderPoint, safetyStock, location } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少库存ID' }, { status: 400 })
+    }
+
+    const inventory = await prisma.inventory.update({
+      where: { id },
+      data: {
+        reorderPoint: reorderPoint ? parseInt(reorderPoint) : undefined,
+        safetyStock: safetyStock ? parseInt(safetyStock) : undefined,
+        location,
+      },
+      include: { product: true, warehouse: true },
+    })
+
+    return NextResponse.json(inventory)
+  } catch (error) {
+    console.error('更新库存失败:', error)
+    return NextResponse.json({ error: '更新库存失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/inventory - 删除库存记录
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少库存ID' }, { status: 400 })
+    }
+
+    // 检查库存是否为0
+    const inventory = await prisma.inventory.findUnique({ where: { id } })
+    if (inventory && inventory.quantity !== 0) {
+      return NextResponse.json({ error: '库存不为0，不能删除' }, { status: 400 })
+    }
+
+    await prisma.inventory.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除库存失败:', error)
+    return NextResponse.json({ error: '删除库存失败' }, { status: 500 })
+  }
+}

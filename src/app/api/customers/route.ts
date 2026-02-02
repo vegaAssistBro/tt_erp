@@ -114,3 +114,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建客户失败' }, { status: 500 })
   }
 }
+
+// PUT /api/customers - 更新客户
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, ...data } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少客户ID' }, { status: 400 })
+    }
+
+    const customer = await prisma.customer.update({
+      where: { id },
+      data: {
+        ...data,
+        creditLimit: data.creditLimit ? parseFloat(data.creditLimit) : undefined,
+      },
+    })
+
+    return NextResponse.json(customer)
+  } catch (error) {
+    console.error('更新客户失败:', error)
+    return NextResponse.json({ error: '更新客户失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/customers - 删除客户
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少客户ID' }, { status: 400 })
+    }
+
+    await prisma.customer.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除客户失败:', error)
+    return NextResponse.json({ error: '删除客户失败' }, { status: 500 })
+  }
+}

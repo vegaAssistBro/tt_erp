@@ -96,3 +96,61 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '创建交易失败' }, { status: 500 })
   }
 }
+
+// PUT /api/transactions - 更新交易
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id, date, type, accountId, amount, direction, description } = body
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少交易ID' }, { status: 400 })
+    }
+
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : undefined,
+        type,
+        accountId,
+        amount: amount ? parseFloat(amount) : undefined,
+        direction,
+        description,
+      },
+      include: { account: true },
+    })
+
+    return NextResponse.json(transaction)
+  } catch (error) {
+    console.error('更新交易失败:', error)
+    return NextResponse.json({ error: '更新交易失败' }, { status: 500 })
+  }
+}
+
+// DELETE /api/transactions - 删除交易
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少交易ID' }, { status: 400 })
+    }
+
+    await prisma.transaction.delete({ where: { id } })
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除交易失败:', error)
+    return NextResponse.json({ error: '删除交易失败' }, { status: 500 })
+  }
+}

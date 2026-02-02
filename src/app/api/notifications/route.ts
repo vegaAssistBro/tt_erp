@@ -131,3 +131,29 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: '更新通知失败' }, { status: 500 })
   }
 }
+
+// DELETE /api/notifications - 删除通知
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: '缺少通知ID' }, { status: 400 })
+    }
+
+    await prisma.notification.delete({
+      where: { id, userId: session.user?.id },
+    })
+
+    return NextResponse.json({ message: '删除成功' })
+  } catch (error) {
+    console.error('删除通知失败:', error)
+    return NextResponse.json({ error: '删除通知失败' }, { status: 500 })
+  }
+}
