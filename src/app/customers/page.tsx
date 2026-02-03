@@ -217,7 +217,7 @@ export default function CustomersPage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={9} className="text-center py-8">加载中...</TableCell></TableRow> :
                  customers.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 customers.map(c => (
+                 customers.map((c: any) => (
                    <TableRow key={c.id}>
                      <TableCell className="font-medium">{c.code}</TableCell>
                      <TableCell>{c.name}</TableCell>

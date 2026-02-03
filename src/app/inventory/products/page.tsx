@@ -236,7 +236,7 @@ export default function ProductsPage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={7} className="text-center py-8">加载中...</TableCell></TableRow> :
                  products.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 products.map(p => (
+                 products.map((p: any) => (
                    <TableRow key={p.id}>
                      <TableCell className="font-medium">{p.sku}</TableCell>
                      <TableCell>{p.name}</TableCell>

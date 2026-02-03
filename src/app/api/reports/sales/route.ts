@@ -96,16 +96,16 @@ export async function GET(request: NextRequest) {
 
       const products = await prisma.product.findMany({
         where: {
-          id: { in: topProducts.map(p => p.productId) },
+          id: { in: topProducts.map((p: any) => p.productId) },
         },
         select: { id: true, name: true, sku: true },
       })
 
-      const productMap = new Map(products.map(p => [p.id, p]))
+      const productMap = new Map(products.map((p: any) => [p.id, p]))
 
       return NextResponse.json({
         type: 'topProducts',
-        data: topProducts.map(p => ({
+        data: topProducts.map((p: any) => ({
           ...p,
           product: productMap.get(p.productId),
         })),

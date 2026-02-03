@@ -144,7 +144,7 @@ export default function ActivitiesPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  activities.map((activity) => (
+                  activities.map((activity: any) => (
                     <TableRow key={activity.id}>
                       <TableCell className="text-sm text-gray-500">
                         {formatDate(activity.createdAt)}

@@ -232,7 +232,7 @@ export default function FinancePage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={8} className="text-center py-8">加载中...</TableCell></TableRow> :
                  transactions.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 transactions.map(tx => (
+                 transactions.map((tx: any) => (
                    <TableRow key={tx.id}>
                      <TableCell className="font-medium">{tx.voucherNo}</TableCell>
                      <TableCell>{formatDate(tx.date)}</TableCell>
@@ -265,10 +265,10 @@ export default function FinancePage() {
           <div className="space-y-4">
             <div><label className="block text-sm font-medium mb-1">日期</label><Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium mb-1">类型</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border rounded-md">{typeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
-              <div><label className="block text-sm font-medium mb-1">方向</label><select value={formData.direction} onChange={e => setFormData({...formData, direction: e.target.value})} className="w-full px-3 py-2 border rounded-md">{directionOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+              <div><label className="block text-sm font-medium mb-1">类型</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border rounded-md">{typeOptions.map((t: any) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+              <div><label className="block text-sm font-medium mb-1">方向</label><select value={formData.direction} onChange={e => setFormData({...formData, direction: e.target.value})} className="w-full px-3 py-2 border rounded-md">{directionOptions.map((t: any) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
             </div>
-            <div><label className="block text-sm font-medium mb-1">账户</label><select value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择账户</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+            <div><label className="block text-sm font-medium mb-1">账户</label><select value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择账户</option>{accounts.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
             <div><label className="block text-sm font-medium mb-1">金额</label><Input type="number" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} /></div>
             <div><label className="block text-sm font-medium mb-1">说明</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-3 py-2 border rounded-md" /></div>
           </div>
@@ -283,10 +283,10 @@ export default function FinancePage() {
           <div className="space-y-4">
             <div><label className="block text-sm font-medium mb-1">日期</label><Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-sm font-medium mb-1">类型</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border rounded-md">{typeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
-              <div><label className="block text-sm font-medium mb-1">方向</label><select value={formData.direction} onChange={e => setFormData({...formData, direction: e.target.value})} className="w-full px-3 py-2 border rounded-md">{directionOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+              <div><label className="block text-sm font-medium mb-1">类型</label><select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full px-3 py-2 border rounded-md">{typeOptions.map((t: any) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+              <div><label className="block text-sm font-medium mb-1">方向</label><select value={formData.direction} onChange={e => setFormData({...formData, direction: e.target.value})} className="w-full px-3 py-2 border rounded-md">{directionOptions.map((t: any) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
             </div>
-            <div><label className="block text-sm font-medium mb-1">账户</label><select value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择账户</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+            <div><label className="block text-sm font-medium mb-1">账户</label><select value={formData.accountId} onChange={e => setFormData({...formData, accountId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择账户</option>{accounts.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
             <div><label className="block text-sm font-medium mb-1">金额</label><Input type="number" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} /></div>
             <div><label className="block text-sm font-medium mb-1">说明</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={2} className="w-full px-3 py-2 border rounded-md" /></div>
           </div>

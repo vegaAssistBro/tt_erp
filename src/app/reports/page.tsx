@@ -252,7 +252,7 @@ export default function ReportsPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {[COLORS[0], COLORS[1], COLORS[2]].map((color, index) => (
+                      {[COLORS[0], COLORS[1], COLORS[2]].map((color: any, index: any) => (
                         <Cell key={`cell-${index}`} fill={color} />
                       ))}
                     </Pie>

@@ -275,7 +275,7 @@ export default function UsersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => {
+                  users.map((user: any) => {
                     const role = roleMap[user.role] || { label: user.role, color: 'bg-gray-100' }
                     return (
                       <TableRow key={user.id}>

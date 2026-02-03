@@ -61,7 +61,7 @@ export default function ImportExportPage() {
       // 跳过标题行
       const dataLines = lines.slice(1)
       
-      const products = dataLines.map((line, index) => {
+      const products = dataLines.map((line: any, index: any) => {
         // 解析 CSV（简单处理，实际应该用库）
         const values = line.split(',').map(v => v.replace(/^"|"$/g, '').trim())
         return {
@@ -266,7 +266,7 @@ P002,测试产品 B,电子,个,20.00,40.00,987654321,启用`
                     <span className="font-medium">错误详情</span>
                   </div>
                   <ul className="text-sm text-red-600 space-y-1 max-h-40 overflow-y-auto">
-                    {result.errors.slice(0, 10).map((error, i) => (
+                    {result.errors.slice(0, 10).map((error: any, i: any) => (
                       <li key={i}>{error}</li>
                     ))}
                     {result.errors.length > 10 && (

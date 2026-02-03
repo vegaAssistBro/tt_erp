@@ -256,7 +256,7 @@ export default function BackupPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {backups.map((backup) => (
+              {backups.map((backup: any) => (
                 <div
                   key={backup.id}
                   className="flex items-center justify-between p-4 border rounded-lg"

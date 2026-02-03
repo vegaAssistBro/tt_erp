@@ -211,7 +211,7 @@ export default function SuppliersPage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={9} className="text-center py-8">加载中...</TableCell></TableRow> :
                  suppliers.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 suppliers.map(s => (
+                 suppliers.map((s: any) => (
                    <TableRow key={s.id}>
                      <TableCell className="font-medium">{s.code}</TableCell>
                      <TableCell>{s.name}</TableCell>

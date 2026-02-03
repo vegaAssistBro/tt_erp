@@ -279,7 +279,7 @@ export default function OrdersPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  orders.map((order) => {
+                  orders.map((order: any) => {
                     const status = statusMap[order.status] || { label: order.status, color: 'bg-gray-100' }
                     return (
                       <TableRow key={order.id}>

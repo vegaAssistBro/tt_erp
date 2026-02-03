@@ -209,7 +209,7 @@ export default function PurchasesPage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={8} className="text-center py-8">加载中...</TableCell></TableRow> :
                  purchases.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 purchases.map(p => {
+                 purchases.map((p: any) => {
                    const s = statusMap[p.status] || { label: p.status, color: 'bg-gray-100' }
                    return (
                      <TableRow key={p.id}>
@@ -242,7 +242,7 @@ export default function PurchasesPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader><DialogTitle>新建采购单</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><label className="block text-sm font-medium mb-1">供应商 <span className="text-red-500">*</span></label><select value={formData.supplierId} onChange={e => setFormData({...formData, supplierId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择供应商</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+            <div><label className="block text-sm font-medium mb-1">供应商 <span className="text-red-500">*</span></label><select value={formData.supplierId} onChange={e => setFormData({...formData, supplierId: e.target.value})} className="w-full px-3 py-2 border rounded-md"><option value="">请选择供应商</option>{suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
             <div><label className="block text-sm font-medium mb-1">期望日期</label><Input type="date" value={formData.expectedDate} onChange={e => setFormData({...formData, expectedDate: e.target.value})} /></div>
             <div><label className="block text-sm font-medium mb-1">备注</label><textarea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} rows={3} className="w-full px-3 py-2 border rounded-md" /></div>
           </div>
@@ -255,7 +255,7 @@ export default function PurchasesPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader><DialogTitle>编辑采购单</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><label className="block text-sm font-medium mb-1">状态</label><select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full px-3 py-2 border rounded-md">{statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+            <div><label className="block text-sm font-medium mb-1">状态</label><select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full px-3 py-2 border rounded-md">{statusOptions.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
             <div><label className="block text-sm font-medium mb-1">期望日期</label><Input type="date" value={formData.expectedDate} onChange={e => setFormData({...formData, expectedDate: e.target.value})} /></div>
             <div><label className="block text-sm font-medium mb-1">备注</label><textarea value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} rows={3} className="w-full px-3 py-2 border rounded-md" /></div>
           </div>
