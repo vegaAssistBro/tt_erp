@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: vegaassistbro/tt_erp
+  IMAGE_NAME: ${{ github.actor }}/tt_erp
 
 jobs:
   test:
