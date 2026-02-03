@@ -42,11 +42,19 @@ interface Order {
 }
 
 interface OrderFormData {
+  id?: string
   customerId: string
   status: string
   deliveryDate: string
   deliveryAddress: string
   note: string
+  orderDate?: string
+  finalAmount?: number
+  items?: Array<{
+    productId: string
+    quantity: number
+    unitPrice: number
+  }>
 }
 
 const statusMap: Record<string, { label: string; color: string }> = {
