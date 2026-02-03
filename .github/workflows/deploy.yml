@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./tt_erp
-        run: npm ci
+        run: npm install
 
       - name: Run linter
         working-directory: ./tt_erp
