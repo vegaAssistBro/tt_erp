@@ -32,8 +32,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { LucideIcon } from 'lucide-react'
 
-const navigation = [
+interface NavItem {
+  name: string
+  href: string
+  icon: LucideIcon
+  children?: Array<{
+    name: string
+    href: string
+  }>
+}
+
+const navigation: NavItem[] = [
   { name: '仪表盘', href: '/dashboard', icon: LayoutDashboard },
   { name: '订单管理', href: '/orders', icon: ShoppingCart },
   { name: '客户管理', href: '/customers', icon: Users },
