@@ -23,15 +23,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        working-directory: ./tt_erp
         run: npm install
 
       - name: Run linter
-        working-directory: ./tt_erp
         run: npm run lint || true
 
       - name: Run type check
-        working-directory: ./tt_erp
         run: npm run type-check || true
 
       - name: Report test status
