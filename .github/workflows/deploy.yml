@@ -36,7 +36,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && !cancelled()
+    if: github.event_name == 'push' && always()
     needs: test
     steps:
       - name: Checkout code
@@ -74,7 +74,7 @@ jobs:
 
   deploy-local:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && !cancelled()
+    if: github.event_name == 'push' && always()
     needs: build
     steps:
       - name: Checkout code with SSH
