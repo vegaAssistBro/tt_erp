@@ -32,12 +32,19 @@ interface Order {
   orderDate: string
   deliveryDate: string | null
   deliveryAddress: string | null
+  customerId: string
   customer: {
     name: string
   }
   salesPerson: {
     name: string
   } | null
+  note: string | null
+  items: Array<{
+    productId: string
+    quantity: number
+    unitPrice: number
+  }>
   createdAt: string
 }
 
