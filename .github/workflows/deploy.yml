@@ -40,6 +40,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    needs: test
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -77,6 +79,8 @@ jobs:
   deploy-local:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    needs: build
+    continue-on-error: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
