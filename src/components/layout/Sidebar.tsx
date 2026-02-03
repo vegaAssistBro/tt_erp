@@ -22,8 +22,18 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+interface MenuItem {
+  title: string
+  href?: string
+  icon?: any
+  children?: Array<{
+    title: string
+    href: string
+  }>
+}
+
 // 菜单配置
-const menuItems = [
+const menuItems: MenuItem[] = [
   {
     title: '仪表盘',
     href: '/dashboard',
