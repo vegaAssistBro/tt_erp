@@ -20,11 +20,19 @@ interface OrderFormProps {
 }
 
 interface OrderFormData {
+  id?: string
   customerId: string
-  status: string
-  deliveryDate: string
-  deliveryAddress: string
-  note: string
+  orderDate?: string
+  deliveryDate?: string
+  deliveryAddress?: string
+  finalAmount?: number
+  note?: string
+  status?: string
+  items?: Array<{
+    productId: string
+    quantity: number
+    unitPrice: number
+  }>
 }
 
 const statusOptions = [
