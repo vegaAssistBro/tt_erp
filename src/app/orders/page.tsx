@@ -71,7 +71,7 @@ export default function OrdersPage() {
   // 弹窗状态
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [editingOrder, setEditingOrder] = useState<OrderFormData | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deletingOrder, setDeletingOrder] = useState<Order | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -189,7 +189,20 @@ export default function OrdersPage() {
   }
 
   const openEditDialog = (order: Order) => {
-    setEditingOrder(order)
+    // Convert Order to OrderFormData
+    const formData: OrderFormData = {
+      customerId: order.customerId,
+      orderDate: order.orderDate,
+      deliveryDate: order.deliveryDate || undefined,
+      finalAmount: order.finalAmount,
+      note: order.note || '',
+      items: order.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+    }
+    setEditingOrder(formData)
     setEditDialogOpen(true)
   }
 
