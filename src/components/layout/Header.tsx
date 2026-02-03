@@ -8,8 +8,7 @@ import {
   User, 
   LogOut, 
   Settings,
-  ChevronDown,
-  Log
+  ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
