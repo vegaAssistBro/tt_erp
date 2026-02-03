@@ -90,6 +90,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          debug: true
           script: |
             cd /home/ubuntu/.openclaw/workspace/tt_erp
             
