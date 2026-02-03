@@ -80,19 +80,14 @@ jobs:
     if: github.event_name == 'push' && !cancelled()
     needs: build
     steps:
-      - name: Checkout code
+      - name: Checkout code with SSH
         uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SSH_KEY_ED25519 }}
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" | base64 -d > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "StrictHostKeyChecking no" > ~/.ssh/config
-          
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT || 22 }} 'bash -s' << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT || 22 }} 'bash -s' << 'EOF'
             cd /home/ubuntu/.openclaw/workspace/tt_erp
             
             # Ensure MySQL is running
