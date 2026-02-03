@@ -206,10 +206,13 @@ export default function OrdersPage() {
   const openEditDialog = (order: Order) => {
     // Convert Order to OrderFormData
     const formData: OrderFormData = {
+      id: order.id,
       customerId: order.customerId,
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate || undefined,
+      deliveryAddress: order.deliveryAddress || undefined,
       finalAmount: parseFloat(order.finalAmount),
+      status: order.status,
       note: order.note || '',
       items: order.items.map(item => ({
         productId: item.productId,
