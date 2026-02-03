@@ -182,7 +182,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* 菜单 */}
         <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
-          {menuItems.map(item => renderMenuItem(item))}
+          {menuItems.map((item: typeof menuItems[0]) => renderMenuItem(item))}
         </nav>
       </aside>
     </>

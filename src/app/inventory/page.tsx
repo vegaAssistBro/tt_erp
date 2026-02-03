@@ -181,7 +181,7 @@ export default function InventoryPage() {
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={10} className="text-center py-8">加载中...</TableCell></TableRow> :
                  inventory.length === 0 ? <TableRow><TableCell colSpan={10} className="text-center py-8">暂无数据</TableCell></TableRow> :
-                 inventory.map(item => {
+                 inventory.map((item: any) => {
                    const status = getStockStatus(item.quantity, item.safetyStock)
                    return (
                      <TableRow key={item.id}>
