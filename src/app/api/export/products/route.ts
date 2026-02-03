@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       // 生成 CSV
       const headers = ['SKU', '产品名称', '分类', '单位', '成本价', '销售价', '条码', '状态', '创建时间']
       
-      const rows = products.map(p => [
+      const rows = products.map((p: any) => [
         p.sku,
         p.name,
         p.category?.name || '',
