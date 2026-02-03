@@ -42,8 +42,8 @@ interface Order {
   note: string | null
   items: Array<{
     productId: string
-    quantity: number
-    unitPrice: number
+    quantity: string | number
+    unitPrice: string | number
   }>
   createdAt: string
 }
@@ -209,12 +209,12 @@ export default function OrdersPage() {
       customerId: order.customerId,
       orderDate: order.orderDate,
       deliveryDate: order.deliveryDate || undefined,
-      finalAmount: order.finalAmount,
+      finalAmount: parseFloat(order.finalAmount),
       note: order.note || '',
       items: order.items.map(item => ({
         productId: item.productId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
       })),
     }
     setEditingOrder(formData)
