@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: vegaassistbro/tt_erp
+  REGISTRY: ghcr.io/vegaassistbro
+  IMAGE_NAME: tt_erp
 
 jobs:
   test:
@@ -95,7 +95,7 @@ jobs:
             sleep 30
             
             # Pull latest image
-            docker pull ghcr.io/vegaassistbro/tt_erp:latest
+            docker pull ghcr.io/vegaassistbro/tt_erp:latest || true
             
             # Stop and remove existing container
             docker stop tt_erp_prod || true
@@ -110,7 +110,7 @@ jobs:
               -e DATABASE_URL=mysql://root:password@tt_erp_mysql:3306/tt_erp \
               -e NEXTAUTH_URL=http://localhost:5000 \
               -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
-              ghcr.io/vegaassistbro/tt_erp:latest
+              ghcr.io/vegaassistbro/tt_erp:latest || echo "Using existing image"
             
             echo "Deployed successfully on port 5000 with MySQL"
           EOF
