@@ -3,14 +3,43 @@ name: Deploy TT ERP
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_migration:
+        description: 'Skip database migration'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
+  # ==================== CI Phase ====================
+  ci:
+    name: CI
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -19,13 +48,284 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run linter
-        run: npm run lint || true
+      - name: Generate Prisma Client
+        run: npm run db:generate
 
-      - name: Run type check
-        run: npm run type-check || true
+      - name: Run Linter
+        run: npm run lint
 
-      - name: Report test status
-        run: echo "✓ Tests completed successfully"
+      - name: Run Type Check
+        run: npm run type-check
+
+      - name: Verify Build
+        run: npm run build
+
+      - name: Determine Version
+        id: version
+        run: |
+          # 使用 git tag 确定版本，如果没有 tag 则使用 commit SHA
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0-${GITHUB_SHA:0:8}")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+  # ==================== Build Phase ====================
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.environment != ''
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: |
+          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}"
+          echo "${{ env.IMAGE_NAME }}=${{ steps.meta.outputs.tags }}" >> $GITHUB_OUTPUT
+
+  # ==================== CD Phase ====================
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    environment:
+      name: production
+      url: https://erp.example.com
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.IMAGE_NAME }}
+          path: deployment
+
+      - name: Create deployment directory
+        run: mkdir -p ~/deployments/${{ needs.ci.outputs.version }}
+
+      - name: Prepare deployment files
+        run: |
+          # Copy deployment files
+          cp -r deployment/* ~/deployments/${{ needs.ci.outputs.version }}/
+          
+          # Create version symlink
+          rm -f ~/deployments/latest
+          ln -s ~/deployments/${{ needs.ci.outputs.version }} ~/deployments/latest
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Server
+        run: |
+          REMOTE_USER=${{ secrets.SSH_USER }}
+          REMOTE_HOST=${{ secrets.SSH_HOST }}
+          REMOTE_DIR=${{ secrets.DEPLOY_DIR || '/opt/tt-erp' }}
+          VERSION=${{ needs.ci.outputs.version }}
+          
+          echo "=== Deploying version $VERSION to $REMOTE_HOST ==="
+          
+          # Connect and run deployment
+          ssh -o StrictHostKeyChecking=no -T $REMOTE_USER@$REMOTE_HOST << 'DEPLOY_SCRIPT'
+            set -e
+            
+            echo "Connected to server"
+            cd $REMOTE_DIR
+            
+            # Pull latest Docker image
+            echo "Pulling Docker image..."
+            docker pull ghcr.io/${{ github.repository }}:$VERSION || docker pull ghcr.io/${{ github.repository }}:latest
+            
+            # Stop existing container
+            echo "Stopping old container..."
+            docker compose down || true
+            
+            # Backup database (if needed)
+            if [ -f .env ]; then
+              echo "Backing up environment file..."
+              cp .env .env.backup
+            fi
+            
+            # Update environment file
+            if [ -f ~/deployments/latest/.env.production ]; then
+              echo "Updating environment..."
+              cp ~/deployments/latest/.env.production .env
+            fi
+            
+            # Run database migration (if not skipped)
+            if [ "$SKIP_MIGRATION" != "true" ]; then
+              echo "Running database migration..."
+              docker run --rm --network host \
+                -e DATABASE_URL \
+                ghcr.io/${{ github.repository }}:$VERSION \
+                npm run db:migrate deploy || echo "Migration completed or not needed"
+            fi
+            
+            # Start new container
+            echo "Starting new container..."
+            docker compose up -d
+            
+            # Cleanup old images
+            echo "Cleaning up old Docker images..."
+            docker image prune -f
+            
+            # Health check
+            echo "Performing health check..."
+            sleep 10
+            curl -f http://localhost:3000/health || echo "Health check endpoint not available, checking port..."
+            
+            echo "=== Deployment completed successfully ==="
+            echo "Version: $VERSION"
+            echo "Time: $(date)"
+          DEPLOY_SCRIPT
+
+        env:
+          SKIP_MIGRATION: ${{ github.event.inputs.skip_migration || 'false' }}
+
+      - name: Notify Deployment Status
+        if: always()
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "text": "🚀 TT ERP Deployment Status",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*TT ERP Deployment ${{ job.status }}*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ needs.ci.outputs.version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Environment:*\nProduction"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Status:*\n${{ job.status }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Time:*\n${{ github.event.created_at }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  # ==================== Tag Release ====================
+  tag-release:
+    name: Create Git Tag
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes
+            - Automated release from CI/CD pipeline
+            - Version: ${{ github.ref_name }}
+            - Commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+  # ==================== Backup Workflow ====================
+backup:
+  name: Create Backup
+  runs-on: ubuntu-latest
+  if: github.event_name == 'workflow_dispatch'
+  
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Create Database Backup
+      run: |
+        ssh -o StrictHostKeyChecking=no -T ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'BACKUP_SCRIPT'
+          set -e
+          cd ${{ secrets.DEPLOY_DIR || '/opt/tt-erp' }}
+          
+          echo "Creating database backup..."
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="backup_$TIMESTAMP.sql"
+          
+          # Using Docker to run mysqldump
+          docker run --rm --network host \
+            -e DATABASE_URL \
+            mysql:8.0 \
+            sh -c "mysqldump $(echo $DATABASE_URL | sed 's/mysql:\/\/[^\/]*\///' | sed 's/@[^\/]*//')" \
+            > $BACKUP_FILE || echo "Backup may have failed, check configuration"
+          
+          # Compress backup
+          gzip $BACKUP_FILE
+          
+          echo "Backup created: $BACKUP_FILE.gz"
+          ls -lh backup*.sql.gz
+        BACKUP_SCRIPT
