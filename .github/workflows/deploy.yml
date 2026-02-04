@@ -5,10 +5,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io/vegaassistbro
-  IMAGE_NAME: tt_erp
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -34,39 +30,10 @@ jobs:
       - name: Report test status
         run: echo "Test completed with failures, continuing with build..."
 
-  build:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          build-args: |
-            NODE_ENV=production
-
   deploy-local:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: build
+    needs: test
     steps:
       - name: Checkout code with SSH
         uses: actions/checkout@v4
@@ -76,11 +43,17 @@ jobs:
       - name: Deploy via SSH
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} -p ${{ secrets.SSH_PORT || 22 }} 'bash -s' << 'EOF'
+            set -e
             cd /home/ubuntu/.openclaw/workspace/tt_erp
             
+            # Stop and remove existing containers
+            docker stop tt_erp_prod tt_erp_mysql 2>/dev/null || true
+            docker rm tt_erp_prod tt_erp_mysql 2>/dev/null || true
+            
+            # Remove old Docker image to free space
+            docker rmi tt_erp:latest 2>/dev/null || true
+            
             # Ensure MySQL is running
-            docker stop tt_erp_mysql || true
-            docker rm tt_erp_mysql || true
             docker run -d \
               --name tt_erp_mysql \
               -p 3306:3306 \
@@ -92,10 +65,18 @@ jobs:
               --collation-server=utf8mb4_unicode_ci
             
             # Wait for MySQL to be ready
-            sleep 30
+            echo "Waiting for MySQL to be ready..."
+            for i in {1..30}; do
+              if docker exec tt_erp_mysql mysqladmin ping -h localhost --silent 2>/dev/null; then
+                echo "MySQL is ready!"
+                break
+              fi
+              sleep 2
+            done
             
-            # Pull latest image
-            docker pull ghcr.io/vegaassistbro/tt_erp:latest || true
+            # Build the Docker image
+            echo "Building Docker image..."
+            docker build -t tt_erp:latest .
             
             # Stop and remove existing container
             docker stop tt_erp_prod || true
@@ -110,7 +91,7 @@ jobs:
               -e DATABASE_URL=mysql://root:password@tt_erp_mysql:3306/tt_erp \
               -e NEXTAUTH_URL=http://localhost:5000 \
               -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
-              ghcr.io/vegaassistbro/tt_erp:latest || echo "Using existing image"
+              tt_erp:latest
             
             echo "Deployed successfully on port 5000 with MySQL"
           EOF
